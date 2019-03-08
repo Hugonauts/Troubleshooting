@@ -1,0 +1,46 @@
+#!/bin/bash
+
+#Variables
+rm -Rf /Library/Preferences/menu.nomad.login.ad.plist
+mkdir /var/db/NoMADLogin/
+AD_domain="jeff.jeff.edu"
+BackgroundImage="/Library/Images/Enrollment/NoMadWallpaper.png"
+LoginLogo="/Library/Images/Enrollment/JeffersonLogo.png"
+# EULA="Lots of EULA Blah Blah"
+# EULA_Title=" Jefferson Blah Blah"
+# EULA_Path="/var/db/NoMADLogin/"
+Placeholder="Campus Key"
+
+# Write default AD domain
+defaults write /Library/Preferences/menu.nomad.login.ad.plist ADDomain "$AD_domain"
+# Background Image
+defaults write /Library/Preferences/menu.nomad.login.ad.plist BackgroundImage "$BackgroundImage"
+# Logo
+defaults write /Library/Preferences/menu.nomad.login.ad.plist LoginLogo "$LoginLogo"
+# Campus Key
+defaults write /Library/Preferences/menu.nomad.login.ad.plist UsernameFieldPlaceholder "$Placeholder"
+# Add NoMad Creds to Keychain
+defaults write /Library/Preferences/menu.nomad.login.ad.plist KeyChainAddNoMAD -bool true
+# Create Keychain
+defaults write /Library/Preferences/menu.nomad.login.ad.plist KeychainCreate -bool true
+# EnableFDE
+defaults write /Library/Preferences/menu.nomad.login.ad.plist EnableFDE -bool true
+
+# Backup existing security authdb settings
+security authorizationdb read system.login.console > /private/tmp/evaluate-mechanisms/console.bak
+
+# Write NoMADLoginAD security authdb mechanisms
+security authorizationdb write system.login.console < /private/tmp/evaluate-mechanisms/console-ad
+
+#Use authchanger
+/usr/local/bin/authchanger -reset -AD
+
+# Find loginwindow processes and kill if any exist
+/usr/bin/killall -HUP loginwindow
+
+launchctl unload /Library/Preferences/menu.nomad.login.ad.plist
+
+launchctl load /Library/Preferences/menu.nomad.login.ad.plist
+
+exit 0      ## Success
+exit 1      ## Failure
